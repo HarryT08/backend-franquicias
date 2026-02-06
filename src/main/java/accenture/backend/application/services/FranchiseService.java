@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @AllArgsConstructor
@@ -34,7 +35,9 @@ public class FranchiseService {
     public Franchise addBranchToFranchise(String idFranchise, String nameBranch) {
         Franchise franchise = getFranchise(idFranchise);
         franchise.getBranches().add(
-                Branch.builder().name(nameBranch).build()
+                Branch.builder()
+                        .id(UUID.randomUUID().toString())
+                        .name(nameBranch).build()
         );
         return franchiseRepositoryPort.save(franchise);
     }
@@ -50,7 +53,10 @@ public class FranchiseService {
         Franchise franchise = getFranchise(idFranchise);
         Branch branch = getBranch(franchise, idBranch);
         branch.getProducts().add(
-                Product.builder().name(nameProduct).stock(stock).build()
+                Product.builder()
+                        .id(UUID.randomUUID().toString())
+                        .name(nameProduct)
+                        .stock(stock).build()
         );
         return franchiseRepositoryPort.save(franchise);
     }

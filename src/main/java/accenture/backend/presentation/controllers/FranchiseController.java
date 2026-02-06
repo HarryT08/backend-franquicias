@@ -44,7 +44,7 @@ public class FranchiseController {
         return FranchiseMapper.toFranchiseResponse(franchiseService.updateNameBranch(idFranchise, idBranch, request.name()));
     }
 
-    @PostMapping("/idFranchise/branches/{idBranch}/products")
+    @PostMapping("/{idFranchise}/branches/{idBranch}/products")
     @ResponseStatus(HttpStatus.CREATED)
     public FranchiseResponse addProductToBranch(@PathVariable String idFranchise, @PathVariable String idBranch, @Valid @RequestBody CreateProduct request) {
         return FranchiseMapper.toFranchiseResponse(franchiseService.addProductToBranch(idFranchise, idBranch, request.name(), request.stock()));
