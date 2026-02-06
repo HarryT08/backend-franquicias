@@ -12,6 +12,8 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -24,52 +26,53 @@ public class FranchiseController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public FranchiseResponse createFranchise(@Valid @RequestBody CreateFranchiseRequest request) {
-        return FranchiseMapper.toFranchiseResponse(franchiseService.createFranchise(request.name()));
+    public Mono<FranchiseResponse> createFranchise(@Valid @RequestBody CreateFranchiseRequest request) {
+        return franchiseService.createFranchise(request.name()).map(FranchiseMapper::toFranchiseResponse);
     }
 
     @PutMapping("/{idFranchise}/name")
-    public FranchiseResponse updateFranchiseName(@PathVariable String idFranchise, @Valid @RequestBody UpdateNameRequest request) {
-        return FranchiseMapper.toFranchiseResponse(franchiseService.updateNameFranchise(idFranchise, request.name()));
+    public Mono<FranchiseResponse> updateFranchiseName(@PathVariable String idFranchise, @Valid @RequestBody UpdateNameRequest request) {
+        return franchiseService.updateNameFranchise(idFranchise, request.name()).map(FranchiseMapper::toFranchiseResponse);
     }
 
     @PostMapping("/{idFranchise}/branches")
     @ResponseStatus(HttpStatus.CREATED)
-    public FranchiseResponse addBranchToFranchise(@PathVariable String idFranchise, @Valid @RequestBody CreateFranchiseRequest request) {
-        return FranchiseMapper.toFranchiseResponse(franchiseService.addBranchToFranchise(idFranchise, request.name()));
+    public Mono<FranchiseResponse> addBranchToFranchise(@PathVariable String idFranchise, @Valid @RequestBody CreateFranchiseRequest request) {
+        return franchiseService.addBranchToFranchise(idFranchise, request.name()).map(FranchiseMapper::toFranchiseResponse);
     }
 
     @PutMapping("/{idFranchise}/branches/{idBranch}/name")
-    public FranchiseResponse updateBranchName(@PathVariable String idFranchise, @PathVariable String idBranch, @Valid @RequestBody UpdateNameRequest request) {
-        return FranchiseMapper.toFranchiseResponse(franchiseService.updateNameBranch(idFranchise, idBranch, request.name()));
+    public Mono<FranchiseResponse> updateBranchName(@PathVariable String idFranchise, @PathVariable String idBranch, @Valid @RequestBody UpdateNameRequest request) {
+        return franchiseService.updateNameBranch(idFranchise, idBranch, request.name()).map(FranchiseMapper::toFranchiseResponse);
     }
 
     @PostMapping("/{idFranchise}/branches/{idBranch}/products")
     @ResponseStatus(HttpStatus.CREATED)
-    public FranchiseResponse addProductToBranch(@PathVariable String idFranchise, @PathVariable String idBranch, @Valid @RequestBody CreateProduct request) {
-        return FranchiseMapper.toFranchiseResponse(franchiseService.addProductToBranch(idFranchise, idBranch, request.name(), request.stock()));
+    public Mono<FranchiseResponse> addProductToBranch(@PathVariable String idFranchise, @PathVariable String idBranch, @Valid @RequestBody CreateProduct request) {
+        return franchiseService.addProductToBranch(idFranchise, idBranch, request.name(), request.stock()).map(FranchiseMapper::toFranchiseResponse);
     }
 
     @DeleteMapping("/{idFranchise}/branches/{idBranch}/products/{idProduct}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeProductFromBranch(@PathVariable String idFranchise, @PathVariable String idBranch, @PathVariable String idProduct) {
-        franchiseService.deleteProduct(idFranchise, idBranch, idProduct);
+    public Mono<Void> removeProductFromBranch(@PathVariable String idFranchise, @PathVariable String idBranch, @PathVariable String idProduct) {
+        return franchiseService.deleteProduct(idFranchise, idBranch, idProduct);
     }
 
     @PutMapping("/{idFranchise}/branches/{idBranch}/products/{idProduct}/stock")
-    public FranchiseResponse updateProductStock(@PathVariable String idFranchise, @PathVariable String idBranch, @PathVariable String idProduct, @Valid @RequestBody UpdateStockRequest request) {
-        return FranchiseMapper.toFranchiseResponse(franchiseService.updateStockProduct(idFranchise, idBranch, idProduct, request.stock()));
+    public Mono<FranchiseResponse> updateProductStock(@PathVariable String idFranchise, @PathVariable String idBranch, @PathVariable String idProduct, @Valid @RequestBody UpdateStockRequest request) {
+        return franchiseService.updateStockProduct(idFranchise, idBranch, idProduct, request.stock()).map(FranchiseMapper::toFranchiseResponse);
     }
 
     @GetMapping("/{idFranchise}/products-max-stock")
-    public List<ProductMaxStockResponse> getProductsWithMaxStock(@PathVariable String idFranchise) {
+    public Flux<ProductMaxStockResponse> getProductsWithMaxStock(@PathVariable String idFranchise) {
         return franchiseService.getProductMaxStockByBranch(idFranchise)
-                .stream()
-                .map(p -> new ProductMaxStockResponse(
-                        p.branchName(),
-                        p.productName(),
-                        p.stock()
-                ))
-                .toList();
+                .flatMapMany(Flux::fromIterable)
+                .map(p ->
+                    new ProductMaxStockResponse(
+                            p.branchName(),
+                            p.productName(),
+                            p.stock()
+                    )
+                );
     }
 }

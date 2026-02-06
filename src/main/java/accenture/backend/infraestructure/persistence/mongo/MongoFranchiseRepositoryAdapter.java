@@ -4,22 +4,21 @@ import accenture.backend.domain.model.Franchise;
 import accenture.backend.domain.ports.FranchiseRepositoryPort;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Repository;
-
-import java.util.Optional;
+import reactor.core.publisher.Mono;
 
 @Repository
 @AllArgsConstructor
 public class MongoFranchiseRepositoryAdapter implements FranchiseRepositoryPort {
 
-    private final SpringDataFranchiseRepository springDataFranchiseRepository;
+    private final FranchiseReactiveRepository franchiseReactiveRepository;
 
     @Override
-    public Franchise save(Franchise franchise) {
-        return springDataFranchiseRepository.save(franchise);
+    public Mono<Franchise> save(Franchise franchise) {
+        return franchiseReactiveRepository.save(franchise);
     }
 
     @Override
-    public Optional<Franchise> findById(String id) {
-        return springDataFranchiseRepository.findById(id);
+    public Mono<Franchise> findById(String id) {
+        return franchiseReactiveRepository.findById(id);
     }
 }

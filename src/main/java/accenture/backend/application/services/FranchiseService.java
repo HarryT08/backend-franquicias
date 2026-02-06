@@ -8,6 +8,7 @@ import accenture.backend.domain.model.Product;
 import accenture.backend.domain.ports.FranchiseRepositoryPort;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.util.Comparator;
 import java.util.List;
@@ -20,81 +21,99 @@ public class FranchiseService {
 
     private final FranchiseRepositoryPort franchiseRepositoryPort;
 
-    public Franchise createFranchise(String name) {
+    public Mono<Franchise> createFranchise(String name) {
         Franchise franchise = Franchise.builder().name(name).build();
 
         return franchiseRepositoryPort.save(franchise);
     }
 
-    public Franchise updateNameFranchise(String idFranchise, String newName) {
-        Franchise franchise = getFranchise(idFranchise);
-        franchise.setName(newName);
-        return franchiseRepositoryPort.save(franchise);
+    public Mono<Franchise> updateNameFranchise(String idFranchise, String newName) {
+        return this.getFranchiseMono(idFranchise)
+                .map(f -> {
+                    f.setName(newName);
+                    return f;
+                })
+                .flatMap(franchiseRepositoryPort::save);
     }
 
-    public Franchise addBranchToFranchise(String idFranchise, String nameBranch) {
-        Franchise franchise = getFranchise(idFranchise);
-        franchise.getBranches().add(
-                Branch.builder()
-                        .id(UUID.randomUUID().toString())
-                        .name(nameBranch).build()
-        );
-        return franchiseRepositoryPort.save(franchise);
+    public Mono<Franchise> addBranchToFranchise(String idFranchise, String nameBranch) {
+        return this.getFranchiseMono(idFranchise)
+                .map(f -> {
+                    f.getBranches().add(
+                            Branch.builder()
+                                    .id(UUID.randomUUID().toString())
+                                    .name(nameBranch).build()
+                    );
+                    return f;
+                })
+                .flatMap(franchiseRepositoryPort::save);
     }
 
-    public Franchise updateNameBranch(String idFranchise, String idSucursal, String newName) {
-        Franchise franchise = getFranchise(idFranchise);
-        Branch branch = getBranch(franchise, idSucursal);
-        branch.setName(newName);
-        return franchiseRepositoryPort.save(franchise);
+    public Mono<Franchise> updateNameBranch(String idFranchise, String idBranch, String newName) {
+        return this.getFranchiseMono(idFranchise)
+                .map(f -> {
+                    Branch branch = getBranch(f, idBranch);
+                    branch.setName(newName);
+                    return f;
+                })
+                .flatMap(franchiseRepositoryPort::save);
     }
 
-    public Franchise addProductToBranch(String idFranchise, String idBranch, String nameProduct, Long stock) {
-        Franchise franchise = getFranchise(idFranchise);
-        Branch branch = getBranch(franchise, idBranch);
-        branch.getProducts().add(
-                Product.builder()
-                        .id(UUID.randomUUID().toString())
-                        .name(nameProduct)
-                        .stock(stock).build()
-        );
-        return franchiseRepositoryPort.save(franchise);
+    public Mono<Franchise> addProductToBranch(String idFranchise, String idBranch, String nameProduct, Long stock) {
+        return this.getFranchiseMono(idFranchise)
+                .map(f -> {
+                    Branch branch = getBranch(f, idBranch);
+                    branch.getProducts().add(
+                            Product.builder()
+                                    .id(UUID.randomUUID().toString())
+                                    .name(nameProduct)
+                                    .stock(stock).build()
+                    );
+                    return f;
+                })
+                .flatMap(franchiseRepositoryPort::save);
     }
 
-    public Franchise deleteProduct(String idFranchise, String idBranch, String idProduct) {
-        Franchise franchise = getFranchise(idFranchise);
-        Branch branch = getBranch(franchise, idBranch);
-        Product product = getProduct(franchise, idBranch, idProduct);
-        branch.getProducts().remove(product);
-        return franchiseRepositoryPort.save(franchise);
+    public Mono<Void> deleteProduct(String idFranchise, String idBranch, String idProduct) {
+        return this.getFranchiseMono(idFranchise)
+                .map(f -> {
+                    Branch branch = getBranch(f, idBranch);
+                    Product product = getProduct(f, idBranch, idProduct);
+                    branch.getProducts().remove(product);
+                    return f;
+                })
+                .flatMap(franchiseRepositoryPort::save)
+                .then();
     }
 
-    public Franchise updateStockProduct(String idFranchise, String idBranch, String idProduct, Long newStock) {
-        Franchise franchise = getFranchise(idFranchise);
-        Product product = getProduct(franchise, idBranch, idProduct);
-        product.setStock(newStock);
-        return franchiseRepositoryPort.save(franchise);
+    public Mono<Franchise> updateStockProduct(String idFranchise, String idBranch, String idProduct, Long newStock) {
+        return this.getFranchiseMono(idFranchise)
+                .map(f -> {
+                    Product product = getProduct(f, idBranch, idProduct);
+                    product.setStock(newStock);
+                    return f;
+                })
+                .flatMap(franchiseRepositoryPort::save);
     }
 
-    public List<ProductWithBranch> getProductMaxStockByBranch(String idFranchise){
-        Franchise franchise = getFranchise(idFranchise);
-
-        return franchise.getBranches().stream()
-                .map(branch -> branch.getProducts().stream()
-                        .max(Comparator.comparing(Product::getStock))
-                        .map(p -> new ProductWithBranch(
-                                branch.getName(),
-                                p.getName(),
-                                p.getStock()
-                        ))
-                        .orElse(null))
-                .filter(Objects::nonNull)
-                .toList();
+    public Mono<List<ProductWithBranch>> getProductMaxStockByBranch(String idFranchise){
+        return this.getFranchiseMono(idFranchise)
+                .map(f -> f.getBranches().stream()
+                        .filter(b -> Objects.nonNull(b.getProducts()) && !b.getProducts().isEmpty())
+                        .map(b -> {
+                            Product maxStockProduct = b.getProducts().stream()
+                                    .max(Comparator.comparingLong(Product::getStock))
+                                    .orElseThrow(() -> new ResourceNotFoundException("No products found in branch"));
+                            return new ProductWithBranch(b.getName(), maxStockProduct.getName(), maxStockProduct.getStock());
+                        })
+                        .toList()
+                );
     }
 
-    private Franchise getFranchise(String idFranchise) {
-        return franchiseRepositoryPort.findById(idFranchise)
-                .orElseThrow(() -> new ResourceNotFoundException("Franchise not found"));
+    private Mono<Franchise> getFranchiseMono(String id) {
+        return franchiseRepositoryPort.findById(id)
+                .switchIfEmpty(Mono.error(
+                        new ResourceNotFoundException("Franchise not found")));
     }
 
     private Branch getBranch(Franchise franchise, String idSucursal) {
