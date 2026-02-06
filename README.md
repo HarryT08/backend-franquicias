@@ -68,7 +68,7 @@ Ejemplo de documento almacenado en MongoDB:
 ### Franquicias
 
 - `POST /api/franchises`: Crear una nueva franquicia.
-- `PUT /api/{idFranchise/name`: Actualiza el nombre de una franquicia existente.
+- `PUT /api/franchises/{idFranchise}/name`: Actualiza el nombre de una franquicia existente.
 
 ### Surcursales
 - `POST /api/franchises/{idFranchise}/branches`: Agregar una nueva sucursal a una franquicia existente.
@@ -79,7 +79,7 @@ Ejemplo de documento almacenado en MongoDB:
 - `PUT /api/franchises/{idFranchise}/branches/{idBranch}/products/{idProduct}/stock`: Actualiza el stock de un producto existente.
 - `DELETE /api/franchises/{idFranchise}/branches/{idBranch}/products/{idProduct}`: Elimina un producto de una sucursal existente.
 - `GET /api/franchises/{idFranchise}/products-max-stock`: Obtiene el producto con mayor stock de una franquicia por sucursales.
---
+---
 ## Manejo de errores
 La API implementa un manejo de errores robusto, devolviendo códigos HTTP adecuados y mensajes de error claros para facilitar la depuración y el uso correcto de la API.
 
@@ -135,7 +135,34 @@ Ejecutar la aplicación
 mvn clean spring-boot:run
 ```
 
-La API estará disponible en `http://localhost:8080/api`.
+La API estará disponible en `http://localhost:8080/`.
+
+---
+
+## Ejecución con Docker
+
+La aplicación puede ejecutarse dentro de un contenedor Docker utilizando **Java 21**, garantizando consistencia entre el entorno de compilación y el entorno de ejecución.
+
+### Requisitos
+- Docker
+- Docker Compose
+
+### Configuración
+
+La aplicación utiliza la variable de entorno `MONGODB_URI` para conectarse a MongoDB Atlas.
+
+Ejemplo:
+
+```bash
+export MONGODB_URI="mongodb+srv://USUARIO:CONTRASEÑA@cluster-franquicias.ta0nizu.mongodb.net/franquicias_db?retryWrites=true&w=majority"
+```
+
+### Construir y ejecutar
+
+```bash
+docker compose up --build
+```
+La API estará disponible en `http://localhost:8080/`.
 
 ---
 ## Flujo de trabajo
